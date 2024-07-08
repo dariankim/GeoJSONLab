@@ -1,1 +1,174 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <title>Lab 3: Asynchronous GeoJSON Data Loading and Visualization</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling from appearing */
+        }
 
+        #container {
+            position: relative; /* Ensure relative positioning for absolute children */
+            height: 100vh;
+        }
+
+        #side-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 500px; /* Adjust the width as needed */
+            height: 100%;
+            overflow-y: scroll;
+            padding: 15px;
+            box-sizing: border-box;
+            background-color: white; /* Add background color */
+            z-index: 1; /* Ensure it's above the map */
+        }
+
+        #map {
+            height: 100%;
+            width: calc(100% - 500px); /* Calculate remaining width after #side-panel */
+            margin-left: 0; /* Remove margin-left to ensure full width */
+        }
+
+        /* Media query for screens smaller than 1024px */
+        @media (max-width: 1023px) {
+            #side-panel {
+                display: none; /* Hide the side panel */
+            }
+
+            #map {
+                width: 100%; /* Make the map take full width */
+            }
+        }
+        button {
+            margin-bottom: 10px;
+        }
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <main id="container">
+        <div id="side-panel">
+            <h2>Japan Prefecture Population</h2>
+            <button onclick="sortTable()">Sort by Population</button>
+            <table>
+                <tr>
+                    <th>Prefecture</th>
+                    <th>Population</th>
+                </tr>
+            </table>
+        </div>
+        <div id="map"></div>
+    </main>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZGFyaWFuazUiLCJhIjoiY2x5Yzg3ZWFkMWxsdzJscTNzOHA1OXo5MSJ9.fW6s2e-XkO9sJj6_2wztqw';
+
+        let map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            zoom: 5.5,
+            center: [138, 38]
+        });
+
+        async function geojsonFetch() {
+            let response = await fetch('assets/japanprefectures.geojson');
+            let earthquakes = await response.json();
+            response = await fetch('assets/japan.json');
+            let japan = await response.json();
+
+            return { earthquakes, japan };
+        }
+
+        geojsonFetch().then(data => {
+            map.on('load', function () {
+                map.addSource('earthquakes', {
+                    type: 'geojson',
+                    data: data.earthquakes
+                });
+
+                map.addLayer({
+                    'id': 'earthquakes-layer',
+                    'type': 'circle',
+                    'source': 'earthquakes',
+                    'paint': {
+                        'circle-radius': 8,
+                        'circle-stroke-width': 2,
+                        'circle-color': 'red',
+                        'circle-stroke-color': 'white'
+                    }
+                });
+
+                map.addSource('japan', {
+                    type: 'geojson',
+                    data: data.japan
+                });
+
+                map.addLayer({
+                    'id': 'japan-layer',
+                    'type': 'fill',
+                    'source': 'japan',
+                    'paint': {
+                        'fill-color': '#0080ff',
+                        'fill-opacity': 0.5
+                    }
+                });
+
+                // Populate the earthquake table
+                let table = document.querySelector('table');
+                data.earthquakes.features.forEach(feature => {
+                    let row = table.insertRow();
+                    row.insertCell(0).textContent = feature.properties.prefecture;
+                    row.insertCell(1).textContent = feature.properties.pop;
+                });
+            });
+        });
+
+        function sortTable() {
+            let table, rows, switching, i, x, y, shouldSwitch;
+            table = document.querySelector('table');
+            switching = true;
+            while (switching) {
+                switching = false;
+                rows = table.rows;
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = parseFloat(rows[i].getElementsByTagName("td")[1].innerHTML);
+                    y = parseFloat(rows[i + 1].getElementsByTagName("td")[1].innerHTML);
+                    if (x < y) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
