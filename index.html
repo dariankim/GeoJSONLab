@@ -2,7 +2,7 @@
 <html lang="en-US">
 <head>
     <meta charset="utf-8">
-    <title>Lab 3: Asynchronous GeoJSON Data Loading and Visualization</title>
+    <title>Washington State County Populations</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.5.0/mapbox-gl.js"></script>
@@ -72,11 +72,11 @@
 <body>
     <main id="container">
         <div id="side-panel">
-            <h2>Japan Prefecture Population</h2>
+            <h2>Washington State County Populations</h2>
             <button onclick="sortTable()">Sort by Population</button>
             <table>
                 <tr>
-                    <th>Prefecture</th>
+                    <th>County</th>
                     <th>Population</th>
                 </tr>
             </table>
@@ -90,14 +90,14 @@
         let map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/dark-v11',
-            zoom: 5.5,
-            center: [138, 38]
+            zoom: 7,
+            center: [-120.7401, 47.4]
         });
 
         async function geojsonFetch() {
-            let response = await fetch('assets/japanprefectures.geojson');
+            let response = await fetch('assets/WAcounty.geojson');
             let earthquakes = await response.json();
-            response = await fetch('assets/japan.json');
+            response = await fetch('assets/WA_County_Boundaries.geojson');
             let japan = await response.json();
 
             return { earthquakes, japan };
@@ -141,7 +141,7 @@
                 let table = document.querySelector('table');
                 data.earthquakes.features.forEach(feature => {
                     let row = table.insertRow();
-                    row.insertCell(0).textContent = feature.properties.prefecture;
+                    row.insertCell(0).textContent = feature.properties.county;
                     row.insertCell(1).textContent = feature.properties.pop;
                 });
             });
